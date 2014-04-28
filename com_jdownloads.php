@@ -11,8 +11,8 @@ defined('_JEXEC') or die;
 
 final class xmap_com_jdownloads
 {
-
     private static $views = array('viewcategories', 'viewcategory');
+
     private static $enabled = false;
 
     public function __construct()
