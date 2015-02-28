@@ -3,13 +3,13 @@
 /**
  * @author     Branko Wilhelm <branko.wilhelm@gmail.com>
  * @link       http://www.z-index.net
- * @copyright  (c) 2013 - 2014 Branko Wilhelm
+ * @copyright  (c) 2013 - 2015 Branko Wilhelm
  * @license    GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
 defined('_JEXEC') or die;
 
-final class xmap_com_jdownloads
+class xmap_com_jdownloads
 {
     private static $views = array('viewcategories', 'viewcategory');
 
@@ -32,7 +32,7 @@ final class xmap_com_jdownloads
         $params['include_downloads'] = ($params['include_downloads'] == 1 || ($params['include_downloads'] == 2 && $xmap->view == 'xml') || ($params['include_downloads'] == 3 && $xmap->view == 'html'));
 
         $params['show_unauth'] = JArrayHelper::getValue($params, 'show_unauth', 0);
-        $show_unauth = ($params['show_unauth'] == 1 || ($params['show_unauth'] == 2 && $xmap->view == 'xml') || ($params['show_unauth'] == 3 && $xmap->view == 'html'));
+        $params['show_unauth'] = ($params['show_unauth'] == 1 || ($params['show_unauth'] == 2 && $xmap->view == 'xml') || ($params['show_unauth'] == 3 && $xmap->view == 'html'));
 
         $params['category_priority'] = JArrayHelper::getValue($params, 'category_priority', $parent->priority);
         $params['category_changefreq'] = JArrayHelper::getValue($params, 'category_changefreq', $parent->changefreq);
