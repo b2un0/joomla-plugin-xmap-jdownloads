@@ -11,7 +11,7 @@ defined('_JEXEC') or die;
 
 class xmap_com_jdownloads
 {
-    private static $views = array('viewcategories', 'viewcategory');
+    private static $views = array('categories', 'category', 'downloads');
 
     private static $enabled = false;
 
@@ -20,13 +20,16 @@ class xmap_com_jdownloads
         self::$enabled = JComponentHelper::isEnabled('com_jdownloads');
     }
 
-    public static function getTree(XmapDisplayer &$xmap, stdClass &$parent, array &$params)
+    public static function getTree(XmapDisplayer $xmap, stdClass $parent, array &$params)
     {
         $uri = new JUri($parent->link);
 
-        if (!self::$enabled || !in_array($uri->getVar('view'), self::$views)) {
+        if (!self::$enabled || !in_array($uri->getVar('view'), self::$views))
+        {
             return;
         }
+
+        $params['groups'] = implode(',', JFactory::getUser()->getAuthorisedViewLevels());
 
         $params['include_downloads'] = JArrayHelper::getValue($params, 'include_downloads', 1);
         $params['include_downloads'] = ($params['include_downloads'] == 1 || ($params['include_downloads'] == 2 && $xmap->view == 'xml') || ($params['include_downloads'] == 3 && $xmap->view == 'html'));
@@ -37,117 +40,137 @@ class xmap_com_jdownloads
         $params['category_priority'] = JArrayHelper::getValue($params, 'category_priority', $parent->priority);
         $params['category_changefreq'] = JArrayHelper::getValue($params, 'category_changefreq', $parent->changefreq);
 
-        if ($params['category_priority'] == -1) {
+        if ($params['category_priority'] == -1)
+        {
             $params['category_priority'] = $parent->priority;
         }
 
-        if ($params['category_changefreq'] == -1) {
+        if ($params['category_changefreq'] == -1)
+        {
             $params['category_changefreq'] = $parent->changefreq;
         }
 
         $params['download_priority'] = JArrayHelper::getValue($params, 'download_priority', $parent->priority);
         $params['download_changefreq'] = JArrayHelper::getValue($params, 'download_changefreq', $parent->changefreq);
 
-        if ($params['download_priority'] == -1) {
+        if ($params['download_priority'] == -1)
+        {
             $params['download_priority'] = $parent->priority;
         }
 
-        if ($params['download_changefreq'] == -1) {
+        if ($params['download_changefreq'] == -1)
+        {
             $params['download_changefreq'] = $parent->changefreq;
         }
 
-        switch ($uri->getVar('view')) {
-            case 'viewcategories':
-                self::getCategoryTree($xmap, $parent, $params, 0);
+        switch ($uri->getVar('view'))
+        {
+            case 'categories':
+                self::getCategoryTree($xmap, $parent, $params, 1);
                 break;
 
-            case 'viewcategory':
+            case 'category':
                 self::getDownloads($xmap, $parent, $params, $uri->getVar('catid'));
+                break;
+
+            case 'downloads':
+                self::getDownloads($xmap, $parent, $params);
                 break;
         }
     }
 
-    private static function getCategoryTree(XmapDisplayer &$xmap, stdClass &$parent, array &$params, $parent_id)
+    private static function getCategoryTree(XmapDisplayer $xmap, stdClass $parent, array &$params, $parent_id)
     {
         $db = JFactory::getDbo();
 
         $query = $db->getQuery(true)
-            ->select(array('c.cat_id', 'c.cat_title', 'c.parent_id'))
-            ->from('#__jdownloads_cats AS c')
+            ->select(array('c.id', 'c.title', 'c.parent_id'))
+            ->from('#__jdownloads_categories AS c')
             ->where('c.parent_id = ' . $db->quote($parent_id))
             ->where('c.published = 1')
             ->order('c.ordering');
 
-        if (!$params['show_unauth']) {
-            $user = JFactory::getUser();
-
-            $access = '';
-            if ($user->guest) {
-                $access = 01;
-            } elseif (!$user->guest) {
-                $access = 11;
-            } elseif ($user->get('isRoot')) {
-                $access = 22;
-            }
-
-            $query->where('c.cat_access <= ' . $db->Quote($access));
+        if (!$params['show_unauth'])
+        {
+            $query->where('c.access IN(' . $params['groups'] . ')');
         }
 
         $db->setQuery($query);
         $rows = $db->loadObjectList();
 
-        if (empty($rows)) {
+        if (empty($rows))
+        {
             return;
         }
 
         $xmap->changeLevel(1);
 
-        foreach ($rows as $row) {
+        foreach ($rows as $row)
+        {
             $node = new stdclass;
             $node->id = $parent->id;
-            $node->name = $row->cat_title;
-            $node->uid = $parent->uid . '_cid_' . $row->cat_id;
+            $node->name = $row->title;
+            $node->uid = $parent->uid . '_cid_' . $row->id;
             $node->browserNav = $parent->browserNav;
             $node->priority = $params['category_priority'];
             $node->changefreq = $params['category_changefreq'];
             $node->pid = $row->parent_id;
-            $node->link = 'index.php?option=com_jdownloads&view=viewcategory&catid=' . $row->cat_id . '&Itemid=' . $parent->id;
+            $node->link = 'index.php?option=com_jdownloads&view=category&catid=' . $row->id . '&Itemid=' . $parent->id;
 
-            if ($xmap->printNode($node) !== false) {
-                self::getDownloads($xmap, $parent, $params, $row->cat_id);
+            if ($xmap->printNode($node) !== false)
+            {
+                self::getDownloads($xmap, $parent, $params, $row->id);
             }
         }
 
         $xmap->changeLevel(-1);
     }
 
-    private static function getDownloads(XmapDisplayer &$xmap, stdClass &$parent, array &$params, $catid)
+    private static function getDownloads(XmapDisplayer $xmap, stdClass $parent, array &$params, $catid = null)
     {
-        self::getCategoryTree($xmap, $parent, $params, $catid);
+        if (!is_null($catid))
+        {
+            self::getCategoryTree($xmap, $parent, $params, $catid);
+        }
 
-        if (!$params['include_downloads']) {
+        if (!$params['include_downloads'])
+        {
             return;
         }
 
         $db = JFactory::getDbo();
 
         $query = $db->getQuery(true)
-            ->select(array('d.file_id', 'd.file_title'))
+            ->select(array('d.file_id', 'd.file_title', 'd.file_alias'))
             ->from('#__jdownloads_files AS d')
-            ->where('d.cat_id = ' . $db->Quote($catid))
             ->where('d.published = 1')
             ->order('d.ordering');
 
+        if (!is_null($catid))
+        {
+            $query->where('d.cat_id = ' . $db->Quote($catid));
+        }
+
+        if (!$params['show_unauth'])
+        {
+            $query->where('d.access IN(' . $params['groups'] . ')');
+        }
+
         $db->setQuery($query);
+
         $rows = $db->loadObjectList();
 
-        if (empty($rows)) {
+        if (empty($rows))
+        {
             return;
         }
 
         $xmap->changeLevel(1);
 
-        foreach ($rows as $row) {
+        foreach ($rows as $row)
+        {
+            $row->slug = !empty($row->file_alias) ? ($row->file_id . ':' . $row->file_alias) : $row->file_id;
+
             $node = new stdclass;
             $node->id = $parent->id;
             $node->name = $row->file_title;
@@ -155,7 +178,7 @@ class xmap_com_jdownloads
             $node->browserNav = $parent->browserNav;
             $node->priority = $params['download_priority'];
             $node->changefreq = $params['download_changefreq'];
-            $node->link = 'index.php?option=com_jdownloads&view=viewdownload&catid=' . $catid . '&cid=' . $row->file_id . '&Itemid=' . $parent->id;
+            $node->link = 'index.php?option=com_jdownloads&view=download&id=' . $row->slug . '&catid=' . $catid . '&Itemid=' . $parent->id;
 
             $xmap->printNode($node);
         }
