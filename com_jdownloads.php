@@ -20,7 +20,7 @@ class xmap_com_jdownloads
         self::$enabled = JComponentHelper::isEnabled('com_jdownloads');
     }
 
-    public static function getTree(XmapDisplayer $xmap, stdClass $parent, array &$params)
+    public static function getTree($xmap, stdClass $parent, array &$params)
     {
         $uri = new JUri($parent->link);
 
@@ -79,7 +79,7 @@ class xmap_com_jdownloads
         }
     }
 
-    private static function getCategoryTree(XmapDisplayer $xmap, stdClass $parent, array &$params, $parent_id)
+    private static function getCategoryTree($xmap, stdClass $parent, array &$params, $parent_id)
     {
         $db = JFactory::getDbo();
 
@@ -126,7 +126,7 @@ class xmap_com_jdownloads
         $xmap->changeLevel(-1);
     }
 
-    private static function getDownloads(XmapDisplayer $xmap, stdClass $parent, array &$params, $catid = null)
+    private static function getDownloads($xmap, stdClass $parent, array &$params, $catid = null)
     {
         if (!is_null($catid))
         {
