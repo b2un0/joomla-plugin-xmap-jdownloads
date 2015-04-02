@@ -11,8 +11,14 @@ defined('_JEXEC') or die;
 
 class xmap_com_jdownloads
 {
+    /**
+     * @var array
+     */
     private static $views = array('categories', 'category', 'downloads');
 
+    /**
+     * @var bool
+     */
     private static $enabled = false;
 
     public function __construct()
@@ -20,6 +26,11 @@ class xmap_com_jdownloads
         self::$enabled = JComponentHelper::isEnabled('com_jdownloads');
     }
 
+    /**
+     * @param XmapDisplayerInterface $xmap
+     * @param stdClass $parent
+     * @param array $params
+     */
     public static function getTree($xmap, stdClass $parent, array &$params)
     {
         $uri = new JUri($parent->link);
@@ -79,6 +90,12 @@ class xmap_com_jdownloads
         }
     }
 
+    /**
+     * @param XmapDisplayerInterface $xmap
+     * @param stdClass $parent
+     * @param array $params
+     * @param int $parent_id
+     */
     private static function getCategoryTree($xmap, stdClass $parent, array &$params, $parent_id)
     {
         $db = JFactory::getDbo();
@@ -114,7 +131,6 @@ class xmap_com_jdownloads
             $node->browserNav = $parent->browserNav;
             $node->priority = $params['category_priority'];
             $node->changefreq = $params['category_changefreq'];
-            $node->pid = $row->parent_id;
             $node->link = 'index.php?option=com_jdownloads&view=category&catid=' . $row->id . '&Itemid=' . $parent->id;
 
             if ($xmap->printNode($node) !== false)
@@ -126,6 +142,12 @@ class xmap_com_jdownloads
         $xmap->changeLevel(-1);
     }
 
+    /**
+     * @param XmapDisplayerInterface $xmap
+     * @param stdClass $parent
+     * @param array $params
+     * @param int|null $catid
+     */
     private static function getDownloads($xmap, stdClass $parent, array &$params, $catid = null)
     {
         if (!is_null($catid))
